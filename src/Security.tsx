@@ -56,8 +56,8 @@ const Security: React.FC<{
     }) as ((oktaAuth: OktaAuth, originalUri?: string) => Promise<void>);
 
     // Add okta-react userAgent
-    if (oktaAuth._oktaUserAgent) {
-      oktaAuth._oktaUserAgent.addEnvironment(`${PACKAGE_NAME}/${PACKAGE_VERSION}`);
+    if (oktaAuth && oktaAuth._oktaUserAgent) {
+      // oktaAuth._oktaUserAgent.addEnvironment(`${PACKAGE_NAME}/${PACKAGE_VERSION}`);
     } else {
       console.warn('_oktaUserAgent is not available on auth SDK instance. Please use okta-auth-js@^5.3.1 .');
     }
