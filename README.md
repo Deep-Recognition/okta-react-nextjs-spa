@@ -102,6 +102,157 @@ npm install --save @okta/okta-auth-js   # requires at least version 5.3.1
 
 ## Usage
 
+## Usage in NextJS for SPA static export
+
+
+### 1. Initialise your OktaAuthNext in your default layout
+
+
+```
+import React, { useEffect, useState } from "react";
+import Head from 'next/head';
+import { useRouter } from 'next/router'
+import { toRelativeUrl } from '@okta/okta-auth-js';
+import OktaAuthNext from '@okta/okta-react-nextjs-spa/OktaAuthNext';
+import { Security } from '@okta/okta-react-nextjs-spa/OktaAuthNext';
+const OKTA_ISSUER = YOUR_OKTA_ISSUER;
+const OKTA_CLIENT_ID = YOUR_OKTA_CLIENT_ID;
+const Layout: React.FC = ({ children }) => {
+  const router = useRouter();
+  const [ oktaAuth, setOktaAuth ] = useState<any>(null);
+  const restoreOriginalUri = async (_oktaAuth: any, originalUri: any) => {
+    // props.history.replace(toRelativeUrl(originalUri || '/', window.location.origin));
+    if(window)
+    {
+      router.replace(toRelativeUrl(originalUri || '/', window?.location.origin));
+    }
+  };
+  // ------
+  // Setup Okta Auth
+  // ------
+  useEffect(() => {
+    if(window)
+    {
+      const auth = OktaAuthNext({
+        issuer: OKTA_ISSUER,
+        clientId: OKTA_CLIENT_ID,
+        redirectUri: window.location.origin + '/login/callback'
+      })
+      setOktaAuth(auth);
+    }
+  }, [])
+  return (
+    <>
+      <Head>
+      </Head>
+      {!!oktaAuth &&
+        <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri}>
+        {children}
+        </Security>
+      }
+      
+    </>
+  );
+}
+export default Layout;
+```
+
+
+### 2. Setup `_app.tsx` 
+
+import `SecureRoute` from `@okta/okta-react-nextjs-spa`
+
+
+``` _app.tsx
+import React from "react";
+import type { ReactElement, ReactNode } from 'react'
+import type { NextPage } from 'next'
+import { AppProps } from "next/app";
+import Layout from "@layouts/Layout";
+// --- Import SecureRoute ----
+import { SecureRoute } from "@okta/okta-react-nextjs-spa";
+type NextPageWithLayout = NextPage & {
+  isSecure?: boolean;
+}
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+}
+function MyApp({ Component, pageProps }: AppPropsWithLayout): ReactNode {
+  const CompWithProps = <Component {...pageProps} />;
+  const withSecureWrapper = Component?.isSecure ? <SecureRoute>{CompWithProps}</SecureRoute> : CompWithProps;
+  return <Layout>{withSecureWrapper}</Layout>;
+}
+export default MyApp;
+```
+
+
+### 3. Create your protected page `/pages/protected.tsx`
+
+In your page set `isSecure` boolean to `true`
+
+```
+import { ReactElement } from 'react';
+import Link from 'next/link';
+const Home: { isSecure: boolean } & LayoutUserLoggedInProps = () => {
+  return (
+      <div style={{ display: 'flex', flexDirection: 'column'}}>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '20px 40px'}}>
+          
+          This is a secure page
+        </div>
+      </div>
+    );
+};
+// -------- THIS IS THE IMPORTANT PART -------
+Home.isSecure = true;
+export default Home;
+```
+
+### 4. Create `callback.tsx` page in `/pages/login/callback` for your 
+
+```
+import React from "react";
+import { LoginCallback } from "@okta/okta-react-nextjs-spa";
+export default LoginCallback;
+```
+
+### 5. Use your Okta API
+
+```
+import * as React from 'react';
+import { useOktaAuth } from '@okta/okta-react-nextjs-spa';
+export const OktaSignInOutButton = () => {
+    const { oktaAuth, authState } = useOktaAuth();
+  
+    const login = async () => oktaAuth.signInWithRedirect();
+    const logout = async () => oktaAuth.signOut({
+        postLogoutRedirectUri: 'http://localhost:3000/'
+    });
+  
+    if(!authState) {
+      return <div>Loading...</div>;
+    }
+  
+    if(!authState.isAuthenticated) {
+      return (
+        <div>
+          <p>Not Logged in yet</p>
+          <button onClick={login}>Login</button>
+        </div>
+      );
+    }
+  
+    return (
+      <div>
+        <p>Logged in!</p>
+        <button onClick={logout}>Logout</button>
+      </div>
+    );
+  };
+  
+  export default OktaSignInOutButton;
+```
+
 `okta-react` provides the means to connect a React SPA with Okta OIDC information.  Most commonly, you will connect to a router library such as [react-router][].
 
 ### React-Router components (optional)
