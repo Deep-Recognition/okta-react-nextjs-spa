@@ -1,6 +1,6 @@
 {
   "name": "@deeprecognition/okta-react-nextjs-spa",
-  "version": "6.5.0-nextjs-2",
+  "version": "6.5.0-nextjs-4",
   "description": "NextJS React SPA static export support with Okta",
   "private": false,
   "scripts": {
